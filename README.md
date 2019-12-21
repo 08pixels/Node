@@ -54,10 +54,14 @@ app.get('/', (req, res) => {
 
 Ele pode interceptar uma requisição e possivelmente devolver uma resposta.
 
-O `Middleware` pode bloquear (o que também é útil) o fluxo das requisições. Para que ele não faça esse bloqueio, é necessário passar mais um parâmetro para o `Middleware`: 
+O `Middleware` pode bloquear (o que também é útil) o fluxo das requisições. Para que ele não faça esse bloqueio, é necessário passar mais um parâmetro (que é uma função) para o `Middleware`: 
 
 ```js
-(req, res, next)
+(req, res, next) => {
+  ...
+  return next();
+}
+
 ```
 
 
