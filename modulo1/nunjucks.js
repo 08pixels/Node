@@ -3,23 +3,25 @@ const nunjucks = require('nunjucks');
 
 const app = express();
 
-// pasta onde vai ficar as views
+// pasta onde fica as views
 nunjucks.configure('views', {
   autoescape: true,
-  express: app, 
-  watch: true,
+  express: app,
+  watch: true
 });
 
 app.set('view engine', 'njk');
 
-let users = ['user1', 'user2', 'user3'];
+let users = ['Luiz', 'Maylane', 'Jared'];
 
 app.get('/', (req, res) => {
-  res.render('list', {users});
+  // o arquivo .njk 
+  res.render('list', { users });
 });
 
 app.get('/new', (req, res) => {
+  // o arquivo .njk
   res.render('new');
-})
+});
 
 app.listen(3000);
