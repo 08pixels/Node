@@ -22,16 +22,18 @@ Acrescentando mais funcionalidades quando comparado ao `http` padrão do node.
 
 ```
   return res.send()
-  return res.json
+  return res.json({})
 ```
 
 ## Nodemon
 
 yarn add -D nodemon
 
+```js
 "scripts": {
   "start": "nodemon index.js"
 }
+```
 
 ```
 $ yarn start
@@ -66,4 +68,34 @@ O `Middleware` pode bloquear (o que também é útil) o fluxo das requisições.
 
 
 Usar `app.use(middleware)` para que todas as rotas utilizem o `Middleware`
+
+
+### Nunjucks
+
+
+É uma template engine que possibilita retornar uma view html (com conteúdo js) para as rotas, e passagem de variáveis.
+
+#### Configuração
+
+```js
+nunjucks.configure('views', {
+  autospace: true,
+  express: app,  // variável do express
+  watch: true // tipo o modo monitor
+});
+```
+
+#### Configurando o uso do Nunjucks para Express
+```js
+// o formato dos arquivos nunjucks
+app.use('view engine', 'njk');
+```
+#### Render
+
+```js
+app.get('/', (req, res) => {
+  // referencia o .njk
+  res.render('pagina_view');
+});
+```
 
