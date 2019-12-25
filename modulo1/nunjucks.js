@@ -11,6 +11,7 @@ nunjucks.configure('views', {
 });
 
 app.set('view engine', 'njk');
+app.use(express.urlencoded({ extended: false }));
 
 let users = ['Luiz', 'Maylane', 'Jared'];
 
@@ -23,5 +24,13 @@ app.get('/new', (req, res) => {
   // o arquivo .njk
   res.render('new');
 });
+
+app.post('/create', (req, res) => {
+  /*  como o node funciona da forma event loop
+      
+  */ 
+  users.push(req.body.user);
+  return res.redirect('/');
+})
 
 app.listen(3000);
