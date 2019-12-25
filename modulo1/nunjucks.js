@@ -7,17 +7,17 @@ const app = express();
 nunjucks.configure('views', {
   autoescape: true,
   express: app,
-  watch: true
+  watch: true,
 });
 
 app.set('view engine', 'njk');
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({extended: false}));
 
-let users = ['Luiz', 'Maylane', 'Jared'];
+const users = ['Luiz', 'Maylane', 'Jared'];
 
 app.get('/', (req, res) => {
-  // o arquivo .njk 
-  res.render('list', { users });
+  // o arquivo .njk
+  res.render('list', {users});
 });
 
 app.get('/new', (req, res) => {
@@ -27,10 +27,10 @@ app.get('/new', (req, res) => {
 
 app.post('/create', (req, res) => {
   /*  como o node funciona da forma event loop
-      
-  */ 
+      a variável `users` ainda é mantida entre as rotas
+  */
   users.push(req.body.user);
   return res.redirect('/');
-})
+});
 
 app.listen(3000);
