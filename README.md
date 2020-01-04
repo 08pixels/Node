@@ -1,17 +1,18 @@
 # Node
 
-- [Modulo 1](#Modulo-1)
+- [Modulo 1](#Módulo-1)
   - [Start](#Start)
     - [Express](#Express)
     - [Nodemon](#Nodemon)
-  - [Fluxo](#Fluxo-de-Requisição)
+  - [Fluxo de Requisição](#Fluxo-de-Requisição)
     - [Middleware](#Middleware)
   - [Nunjucks](#Nunjucks)
     - [Configuração](#Configuração)
     - [Configurar Para Express](#Configurar-uso-para-Express)
     - [Método Render](#Metodo-Render)
   - [Enviar Formulário](#Enviar-Formulário)
-# Modulo 1
+-[Modulo 2](#Módulo-2)
+# Módulo 1
 ## Start
 ### Express
 
@@ -129,3 +130,108 @@ app.use(express.urlenconded({ extended : false }));
 
 Os parâmetros enviados pelo corpo da requisição pode ser acessado através de: `req.body.name`
 
+# Módulo 2
+
+Um aplicativo para gerenciamento de barbearia, onde os barbeiros e os clientes poderão se cadastrar e fazer o gerenciamento do horário.  
+
+### Algumas Variáveis de Ambiente
+`process.env.NODE_ENV` retorna: `production`, `testing` or `development`  
+
+`process.env.PORT` retorna a porta disponivel pelo server
+
+### Módulo path
+
+permite melhor compatibilidade entre navegação das pastas, configurando automaticamente qual o tipo de barra que deve ser utilizada.
+
+```js
+// caminho: diretório atual/app/views
+nunjucks.configure(path.resolve(__dirname, 'app', 'views'))
+```
+
+### Express 
+
+```js
+const express = require('express')
+const nunjucks = require('nunjucks')
+const path = require('path')
+
+class App {
+  constructor() {
+    this.express = express()
+    this.isDev = process.env.NODE_ENV !== 'production'
+
+    this.middleware()
+    this.views()
+    this.routes()
+  }
+
+  middleware() {
+  }
+
+  views() {
+  }
+
+  routes() {
+  }
+}
+
+// normalmente exportar somente o express
+// dependendo sempre da aplicação final.
+module.exports = new App().express
+```
+
+### ORM 
+
+`Object-relational-mapping`
+
+
+### Sequelize
+
+#### Instalação
+```
+yarn add sequelize
+yarn add sequilize-cli -D
+```
+#### Inicialização
+
+```
+npx sequelize init
+```
+
+#### Configuração
+
+```js
+// no diretório raiz
+//.sequelizerc
+const path = require('path')
+
+module.exports = {
+  config: path.resolve('src', 'config', 'database.js'), // é necessário alterar o nome do arquivo gerado
+  'models-path': path.resolve('src', 'app', 'models'),
+  'seeders-path': path.resolve('src', 'database', 'seeders'),
+  'migrations-path': path.resolve('src', 'database', 'migrations'),
+}
+```
+
+Para testar (arquivos gerados em migrations)
+```
+npx sequelize migration:create --name=create-users
+```
+
+Arquivo `database.js`
+
+```js
+module.exports = {
+  dialect: 'postgres', // yarn add pg
+  host: '127.0.0.1', // endereço do database
+  username: 'docker',
+  password: 'docker',
+  database: 'modulo2'
+  operatorAliases: false, // para passar mais configurações ao sequelize
+  define: {
+    timestamps: true,
+    underscored: true,
+    underscoredAll: true
+  }
+}
+```
