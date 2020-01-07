@@ -223,6 +223,7 @@ Arquivo `database.js`
 ```js
 module.exports = {
   dialect: 'postgres', // yarn add pg
+
   host: '127.0.0.1', // endereço do database
   username: 'docker',
   password: 'docker',
@@ -234,4 +235,16 @@ module.exports = {
     underscoredAll: true
   }
 }
+```
+
+#### Postgres (database)
+
+```O processo de instalação é no sistema operacional```
+
+- instalar a base de dados (docker community)
+- instalar gerenciador (dbeaver)
+
+#### Postgress integração
+```
+yarn add pg
 ```
