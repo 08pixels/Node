@@ -242,9 +242,19 @@ module.exports = {
 ```O processo de instalação é no sistema operacional```
 
 - instalar a base de dados (docker community)
+  ```sudo docker run --name name_do_database -p 5432:5432 -d -t kartoza/postgis```
+
+  `-p` é o redirecionamento de porta
+  `-d` é o modo detach (background)
+  `-t` é para selecionar a imagem. Foi escolhido o kartoza porque tem melhor geolocalização, uuid, ...
+
+  ```sudo docker ps``` mostra os serviços em execução
+
 - instalar gerenciador (dbeaver)
+  - cuidado com os nomes.
 
 #### Postgress integração
 ```
 yarn add pg
 ```
+
