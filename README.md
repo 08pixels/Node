@@ -274,6 +274,6 @@ Páginas de estilos são deixadas no diretório `src/public`, onde se faz necess
 ```
 
 Lembrar de configurar as rotas
-```
+```js
   res.render('viewsfilepath')
 ```
