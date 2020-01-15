@@ -258,3 +258,17 @@ module.exports = {
 yarn add pg
 ```
 
+### Configurando as views
+
+Para manter uma boa organização, onde temos trechos de codigos que serão padrão na `view`, a separamos em dois diretórios: `_layouts` e `_partials`.
+
+  - `_layots`  é onde fica a parte do layout que será reutilizado.
+    - para utilizar no código é necessário usar o `{% extends "filepath.njk" %}`
+  - `_partials` são as definições do `<head>`
+    - para utilizar no código é necessário usar o `{% include "filepath.js" %}`
+
+Páginas de estilos são deixadas no diretório `src/public`, onde se faz necessário configurar o express para servir páginas públicas (estáticas)
+
+```js
+  this.express.use(express.static(path.resolve('folderpath')))
+```
