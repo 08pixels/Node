@@ -272,3 +272,8 @@ Páginas de estilos são deixadas no diretório `src/public`, onde se faz necess
 ```js
   this.express.use(express.static(path.resolve('folderpath')))
 ```
+
+Lembrar de configurar as rotas
+```
+  res.render('viewsfilepath')
+```
