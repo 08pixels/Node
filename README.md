@@ -292,3 +292,74 @@ module.exports = (sequelize, DataTypes) => {
 ```
 
 É necessário configurar o migrate com os dados da nova tabela criada (métodos: up e down).
+
+### Controller
+
+```js 
+// app/controller
+const { User } = require('../models') // o index.js é encarregado de carregar todos models, assim só informamos quais queremos importar
+class UserController {
+  create(req, res) {
+    res.render('auth/signup')
+  }
+
+  async store(req, res) {
+    await User.create(req.body)
+
+    return res.redirect('/')
+  }
+
+}
+```
+
+### Usando os controllers para configurar as rotas
+
+```js
+//routes.js
+
+const express = require('express')
+const routes = express.Router()
+
+const { UserController } = require('./app/controllers/UserController)
+
+routes.get('/signup', UserController.create)
+routes.post('/signup', UserController.store)
+
+module.exports = routes
+```
+
+### Formulário de Cadastro de Usuário
+
+```html
+// views/auth/signup.njk
+
+<form action="/signup" method="post">
+  <label for="avatar">
+    <img src="images/signup.svg" height="24" />
+  </label>
+
+  <input id="avatar" name="avatar" type="file" />
+  <input type="text" name="name" placeholder="Nome Completo" />
+  <input type="email" name="email" placeholder="Seu e-mail" />
+  <input type="password" name="password" placeholder="Senha" />
+
+  <label for="provider">
+    <input type="checkbox" id="provider" name="provider" value="1" />
+    Sou Cabelereiro
+  </label>
+
+  <button type="submit"> Criar conta </button>
+  <a href="/"> Já possuo conta </a>
+</form>
+<!-- carregar imagem de perfil e já atualizar na visualização -->
+<script type="text/javascript">
+  var avatar = document.getElementById('avatar')
+  var img = document.querySelector('label[for=avatar] img')
+
+  avatar.onchange = function(e) {
+    img.classList.add('preview') // novo atributo para a classe (estilização)
+    img.src = URL.createObjectURL(e.target.files[0])
+  }
+
+</script>
+```
