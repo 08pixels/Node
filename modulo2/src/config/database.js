@@ -4,7 +4,7 @@ module.exports = {
   host: '127.0.0.1',
   username: 'docker',
   password: 'docker',
-  database: 'modulo2',
+  database: 'postgres',
   operatorAliases: false,
   define: {
     timestamps: true,

@@ -277,3 +277,18 @@ Lembrar de configurar as rotas
 ```js
   res.render('viewsfilepath')
 ```
+
+### Criando Model
+
+```js
+// app/models/User.js
+module.exports = (sequelize, DataTypes) => {
+  const User ={
+    name: DataTypes.STRING
+  }
+
+  return User
+}
+```
+
+É necessário configurar o migrate com os dados da nova tabela criada (métodos: up e down).
