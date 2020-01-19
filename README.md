@@ -11,7 +11,8 @@
     - [Configurar Para Express](#Configurar-uso-para-Express)
     - [Método Render](#Metodo-Render)
   - [Enviar Formulário](#Enviar-Formulário)
--[Modulo 2](#Módulo-2)
+- [Modulo 2](#Módulo-2)
+
 # Módulo 1
 ## Start
 ### Express
@@ -283,9 +284,10 @@ Lembrar de configurar as rotas
 ```js
 // app/models/User.js
 module.exports = (sequelize, DataTypes) => {
-  const User ={
+  // primeiro passamos o nome da tabela: User
+  const User = sequelize.define('User', {
     name: DataTypes.STRING
-  }
+  })
 
   return User
 }
@@ -362,4 +364,36 @@ module.exports = routes
   }
 
 </script>
+```
+
+### Encriptando Senha
+
+```
+yarn add bcrypt
+```
+
+O método utilizado foi o `hooks`, no qual disponibiliza vários métodos, onde o que foi utilizado foi o `beforeSave`. O uso dele se dá com a adição de um novo parâmetro no arquivo de model
+
+```js
+// app/models/User.js
+module.exports = (sequelize, DataTypes) => {
+  const User = sequelize.define('User', {
+    name: DataTypes.STRING
+  }, {
+    hooks: {
+      beforeSave: async user => {
+        // se houver uma alteração em password
+        // tanto na criação, como futuramente em uma troca de senha
+        if(user.password) {
+          // o 8 é a quantidade de rounds
+          // normalmente fica entre 8 e 10
+          // maiores números podem comprometer a performance
+          user.password_hash = bcrypt.hash(user.password, 8)
+        }
+      }
+    }
+  })
+
+  return User
+}
 ```
