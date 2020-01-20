@@ -388,7 +388,7 @@ module.exports = (sequelize, DataTypes) => {
           // o 8 é a quantidade de rounds
           // normalmente fica entre 8 e 10
           // maiores números podem comprometer a performance
-          user.password_hash = bcrypt.hash(user.password, 8)
+          user.password_hash = await bcrypt.hash(user.password, 8)
         }
       }
     }
