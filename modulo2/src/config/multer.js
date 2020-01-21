@@ -11,7 +11,7 @@ module.exports = {
         if(err)
           return cb(err)
 
-        cb(null, raw.toString('hex') + path.extname(file.originalname))
+        cb(null, raw.toString('hex') + file.extname(file.originalname))
       })
     }
   })

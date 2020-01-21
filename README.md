@@ -378,7 +378,7 @@ O método utilizado foi o `hooks`, no qual disponibiliza vários métodos, onde 
 // app/models/User.js
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define('User', {
-    name: DataTypes.STRING
+    password: DataTypes.VIRTUAL
   }, {
     hooks: {
       beforeSave: async user => {
@@ -396,4 +396,78 @@ module.exports = (sequelize, DataTypes) => {
 
   return User
 }
+```
+
+### Upload de imagem
+
+`multer` Possibilita o envio de arquivos para o servidor
+
+```
+yarn add multer
+```
+
+Precisamos possibilitar o envio de arquivos através do `<form>`, com um simples atributo:
+```js
+<form action="/signup" method="post" enctype="multipart/form-data">
+```
+
+Para configurar onde os arquivos serão salvos, precisamos criar um arquivo de configuração: `config/multer.js`
+```js
+const path = require('path')
+const crypto = require('crypto')
+const multer = requite('multer')
+
+module.exports = {
+  storage: multer.diskStorage({
+    destination: path.resolve(__dirname, '..', '..', 'tmp', 'uploads'),
+    filename: (req, file, cb) => {
+      crypto.randomBytes(16, (err, raw) => {
+        if(err)
+          return cb(err)
+
+        cb(null, raw.toString('hex') + file.extname(file.originalname))
+      })
+    }
+  })
+}
+```
+
+Precisamos confirar `routes.js` para a execução da configuração do multer:
+
+```js
+const express = require('express')
+const routes = express.Router()
+
+const multerConfig = require('./config/multer')
+const upload = require('multer')(multerConfig)
+
+const UserController = require('./app/controllers/UserController')
+
+routes.get('signup', UserController.create)
+routes.post('signup', upload.single('avatar'), UserController.store) // 'avatar' é o nome da coluna na tabela
+
+module.exports = routes
+
+```
+
+Agora vamos passar o nome do arquivo que foi enviado pelo form para o banco de dados, em  `UserController.js`. 
+
+```js
+const { User } = require('../models')
+
+class UserController {
+  create(req, res) {
+    res.render('auth/signup')
+  }
+
+  async storage(req, res) {
+    const {filename: 'avatar'} = req.file
+
+    await User.create({...req.body, avatar})
+
+    return res.redirect('/')
+  }
+}
+
+module.exports = new UserController()
 ```
