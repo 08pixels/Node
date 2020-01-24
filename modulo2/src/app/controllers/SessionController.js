@@ -18,12 +18,13 @@ class SessionController {
       return res.redirect('/')
     }
 
-    if(! await user.checkPassword(password)) {
+    if(!(await user.checkPassword(password))) {
       console.log('Senha incorreta')
 
       return res.redirect('/')
     }
 
+    req.session.user = user
     return res.redirect('/app/dashboard')
   }
 }
