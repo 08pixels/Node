@@ -1,7 +1,7 @@
 const express = require('express')
-const nunjucks = require('nunjucks')
 const session = require('express-session')
 const FileStore = require('session-file-store')(session)
+const nunjucks = require('nunjucks')
 const path = require('path')
 
 class App {
@@ -21,7 +21,7 @@ class App {
       secret: 'mySecretApp',
       resave: true,
       store: new FileStore({
-        path: path.resolve(__dirname, '..', 'tmp', 'uploads', 'sessions')
+        path: path.resolve(__dirname, '..', 'tmp', 'sessions')
       }),
       saveUninitialized: true
     }))
