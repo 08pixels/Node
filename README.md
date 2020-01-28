@@ -686,5 +686,5 @@ class SessionController {
 
 module.exports = new SessionController()
 ```
-podemos colocar um `console.log(req.session.user)` na rota do dashboard para se certificar dessas ações.
+podemos colocar um `console.log(req.session.user)` na rota do dashboard para se certificar dessas alterações.
 
