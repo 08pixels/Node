@@ -471,3 +471,119 @@ class UserController {
 
 module.exports = new UserController()
 ```
+
+### Autenticação
+
+Para isso, precisamos recuperar os dados do banco de dados.
+Primeiro iremos adicionar uma nova função ao model de `User`
+
+```js
+
+const bcrypt = require('bcrypt')
+
+module.exports = (sequelize, DataTypes) => {
+  const user = sequelize.define('User', {
+    name: DataTypes.STRING,
+    email: DataTypes.STRING,
+    avatar: DataTypes.STRING,
+    password: DataTypes.VIRTUAL,
+    password_hash: DataTypes.STRING,
+    provider: DataTypes.BOOLEAN,
+  }, {
+    hooks: {
+      beforeSave: async user => {
+        if(user.password) {
+          user.password_hash = await bcrypt.hash(user.password, 8)
+        }
+      }
+    }
+  })
+
+  // aqui criaremos a nova função com o método prototype
+  User.prototype.checkPassword = function(password) {
+    return bcrypt.compare(password, this.password_hash)
+  }
+
+  return User
+}
+```
+
+Criaremos um novo arquivo `controller`, `SessionController.js`, que irá invocar o novo método criado. A classe `SessionController` irá gerenciar uma nova sessão, tendo assim a responsabilidade de informar qual view será renderizada na página de login.
+
+```js
+
+const User = require('../models')
+
+class SessionController {
+  create(req, res) {
+    return res.render('auth/sigin')
+  }
+
+  async store(req, res) {
+
+    const { email, password } = req.body
+
+    const user = User.findOne({where: {email}})
+
+    if(!user) {
+      // console.log('usuário não encontrado!')
+
+      return res.redirect('/')
+    }
+
+    if(!(await user.checkPassword(password))) {
+      console.log('Senha incorreta!')
+
+      return res.redirect('/')
+    }
+
+    return res.redirect('/app/dashboard')
+  }
+}
+
+module.export = new SessionController()
+```
+
+Agora basta somente tratá-las no arquivo de rotas.
+
+```js
+const express = require('express')
+const routes = express.Router()
+
+const multerConfig = require('./config/multer')
+const upload = require('multer')(multerConfig)
+
+const UserController = require('./controllers/UserController')
+const SessionController = require('./controllers/SessionController')
+
+server.get('/', SessionController.create)
+server.post('/sigin', SessionController.store)
+
+server.get('/sigup', UserController.create)
+server.post('/sigup', upload.single('avatar'), UserController.store)
+
+routes.get('/app/dashboard', (req, res) => {
+  return res.render('dashboard')
+})
+
+module.exports = routes
+```
+
+View de login
+
+```html
+{% extends "_layouts/auth.njk" %}
+
+{% block body %}
+  <form action="/signin" method="post">
+    <img src="images/logo.svg" height="42">
+
+    <input type="text" name="name" placeholder="Seu nome">
+    <input type="email" name="email" placeholder="Seu e-mail">
+    <input type="password" name="password" placeholder="Sua senha">
+
+    <button type="submit"> Entrar <button>
+    <a href="/signup"> Criar conta </a>
+  </form>
+{% endblock %}
+```
