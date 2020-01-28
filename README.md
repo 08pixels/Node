@@ -510,6 +510,9 @@ module.exports = (sequelize, DataTypes) => {
 
 Criaremos um novo arquivo `controller`, `SessionController.js`, que irá invocar o novo método criado. A classe `SessionController` irá gerenciar uma nova sessão, tendo assim a responsabilidade de informar qual view será renderizada na página de login.
 
+#### dependências
+```yarn add bcrypt```
+
 ```js
 
 const User = require('../models')
@@ -587,3 +590,101 @@ View de login
   </form>
 {% endblock %}
 ```
+
+### Persistir Login (Sessão)
+
+#### Dependências
+```
+yarn add express-session
+yarn add session-file-store
+```
+
+
+Precisamos informar ao `express` para usar esse `middleware`, para isso fazemos as modificações em `server.js`
+
+```js
+const express = require('express')
+const nunjucks = require('nunjucks')
+const session = require('express-session')
+const FileStore = require('session-file-store')(session)
+const path = require('path')
+
+class App {
+  constructor() {
+    this.express = express()
+    this.isDev = process.env.NODE_ENV !== 'production'
+
+    this.middlewares()
+    this.views()
+    this.routes()
+  }
+
+  middlewares() {
+    this.express.use(express.urlencoded({ extended: false }))
+    this.express.use(session({
+      name: 'root', // voce pode dar o nome que quiser
+      secret: 'mySecretApp', // igualmente
+      resave: true,
+      store: new FileStore({
+        path: path.resolve(__dirname, '..', 'tmp', 'sessions')
+      })
+      saveUninitialized: true
+    }))
+  }
+
+  views() {
+    nunjucks.configure(path.resolve(__dirname, 'app', 'views'), {
+      autoescape: true,
+      watch: this.isDev,
+      express: this.express
+    })
+
+    this.express.use(express.static(path.resolve(__dirname, 'public')))
+    this.express.set('view engine', 'njk')
+  }
+
+  routes() {
+    this.express.use(require('./routes'))
+  }
+}
+
+module.exports = new App().express
+
+```
+
+Agora vamos passar os dados da sessão no corpo da requisição. Vamos configurar em `SessionController`
+
+```js
+
+class SessionController {
+  create(req, res) {
+    return res.render('auth/signin')
+  }
+
+  async store(req, res) {
+    const {email, password} = req.body
+
+    const user = await User.findOne({where: { email } })
+
+    if(!user) {
+      console.log('usuário não encontrado')
+
+      return res.redirect('/')
+    }
+
+    if(!(await user.checkPassword(password))) {
+      console.log('senha incorreta')
+
+      return res.redirect('/')
+    }
+
+    // estamos passando aqui
+    req.session.user = user
+    return res.redirect('/app/dashboard')
+  }
+}
+
+module.exports = new SessionController()
+```
+podemos colocar um `console.log(req.session.user)` na rota do dashboard para se certificar dessas ações.
+
