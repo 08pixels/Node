@@ -688,3 +688,61 @@ module.exports = new SessionController()
 ```
 podemos colocar um `console.log(req.session.user)` na rota do dashboard para se certificar dessas alterações.
 
+
+### Middlewares de autenticação
+
+```js
+// src/app/middlewares/auth.js
+module.exports = (req, res, next) => {
+  if(req.session && req.session.user) {
+    // para podermos ter acesso aos dados(sessão) do usuário entre as rotas
+    res.locals.user = req.session.user
+    return next()
+  }
+
+  return res.redirect('/')
+}
+```
+
+```js
+// src/app/middlewares/guest.js
+
+module.exports = (req, res, next) => {
+  if(req.session && !req.session.user) {
+    return next()
+  }
+
+  return res.redirect('/app/dashboard')
+}
+```
+
+#### usando os middlewares nas rotas
+
+```js
+// routes.js
+const express = require('express')
+const routes = express.Router()
+
+const multerConfig = require('./app/config/multer')
+const upload = require('multer')(multerConfig)
+
+const authMiddleware = require('./app/middlewares/auth')
+const guestMiddleware = require('./app/middlewares/guest')
+
+const UserController = require('./app/controllers/UserController')
+const SessionController = require('./app/controllers/SessionController')
+
+
+routes.get('/', guestMiddleware, SessionController.create)
+routes.post('/signin', SessionController.store)
+
+routes.get('/signup', guestMiddleware, UserController.create)
+routes.post('/signup', upload.single('avatar'), UserControler.store)
+
+routes.use('/app', authMiddleware)
+routes.get('/app/dashboard', (req, res) => {
+  return res.render('dashboard')
+})
+
+module.exports = routes
+```
