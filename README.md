@@ -746,3 +746,111 @@ routes.get('/app/dashboard', (req, res) => {
 
 module.exports = routes
 ```
+
+### Logout
+
+Vamos definir a view:
+
+```js
+// src/app/views/_layouts/main.njk
+
+<!DOCTYPE html>
+<html lang="en">
+  {% include "_partials/head.njk" %}
+  <body>
+    <div class="main-wrapper"> 
+      {% block body %} {% endblock %}
+    </div>
+  </body>
+</html>
+```
+
+```js
+// src/app/views/dashboard.js
+
+{% include "_layouts/main.njk" %}
+
+{% block body %}
+  <h1> Olá, {{ user.name }} </h1>
+  <a href="/app/logout"> sair </a>
+{% endblock %}
+```
+
+Vamos precisar criar a rota referida ao logout: `/app/logout`
+
+```js
+const express = require('express')
+const routes = express.Router()
+
+const multerConfig = require('multerConfig')
+const upload = require('multer')(multerConfig)
+
+const authMiddleware = require('./app/middlewares/auth')
+const guestMiddleware = require('./app/middleware/guest')
+
+const UserController = require('./app/controllers/UserController')
+const SessionController = require('./app/controllers/SessionController')
+
+routes.get('/', guestMiddleware, UserController.create)
+routes.post('/signin', UserControler.store)
+
+routes.get('/signup', guestMiddleware, UserController.create)
+routes.post('/signup', upload.single('avatar'), UserController.store)
+
+routes.use('/app', authMiddleware)
+
+routes.get('/app/logout', SessionController.destroy)
+
+routes.get('/app/dashboard', (req, res) => {
+  console.log(req.session.user)
+  return res.render('dashboard')
+})
+
+module.exports = routes
+```
+
+Criando o `middleware` para tratar a rota
+
+```js
+// src/controllers/SessionController
+
+const { User } = require('../models')
+
+class SessionController {
+  create(req, res) {
+    return res.render('auth/sigin')
+  }
+
+  async store(req, res) {
+    const { email, password } = req.file
+
+    const user = await User.findOne({where: { email }})
+
+    if(! user) {
+      console.log('Usuário não encontrado!')
+
+      return res.redirect('/')
+    }
+
+    if(! await user.checkPassword(password)) {
+      console.log('Senha Incorreta')
+
+      return res.redirect('/')
+    }
+
+    req.session.user = user
+    return res.redirect('/app/dashboard')
+  }
+
+  destroy(req, res) {
+    req.session.destroy(() => {
+      res.clearCookie('root')
+
+      return res.redirect('/')
+    }) 
+  }
+}
+
+module.exports = new SessionController()
+
+```
