@@ -995,6 +995,8 @@ routes.get('/app/dashboard', (req, res) => {
   return res.render('dashboard')
 })
 
+routes.get('/app/logout', SessionController.destroy)
+
 module.exports = routes
 ```
 
@@ -1077,5 +1079,87 @@ Informando onde as `flash messages` irão aparecer na view
     }
 
   </script>
+{% endblock %}
+```
+
+### Listagem de Prestadores
+
+Vamos criar um controller para a view de `dashboard.njk`
+
+```js
+// dashboardController.js
+
+const { User } = require('../models')
+
+class DashboardController {
+  async index(req, res) {
+    const providers = await User.findAll({where: { provider: true }})
+
+    return res.render('dashboard', { providers })
+  }
+}
+
+module.exports = new DashboardController()
+```
+
+Usando o Controller para a rota `/app/dashboard`
+
+```js
+const express = require('express')
+const multerConfig = require('./config/multer')
+const upload = require('multer')(multerConfig)
+const routes = express.Router()
+
+const authMiddleware = require('./app/middlewares/auth')
+const guestMiddleware = require('./app/middlewares/guest')
+
+const UserController = require('./app/controllers/UserController')
+const SessionController = require('./app/controllers/SessionController')
+const DashboardController = require('./app/controller/DashboardController')
+
+routes.use((req, res, next) => {
+  res.locals.flashSuccess = req.flash('success')
+  res.locals.flashError = req.flash('error')
+
+  return next()
+})
+
+routes.get('/', guestMiddleware, SessionController.create)
+routes.post('/sigin', SessionController.store)
+
+routes.get('signup', guestMiddleware, UserController.create)
+routes.post('signup', upload.single('avatar'), UserController.store)
+
+routes.use('/app', authMiddleware)
+routes.get('/app/logout', SessionController.destroy)
+
+// aqui
+routes.get('/app/dashboard', DashboardController.index)
+
+module.exports = routes
+```
+
+Criando a view `dashboard.njk`
+
+```html
+{% extends "_layouts/main.njk" %}
+
+{% block body %}
+  <div class="content">
+    <strong> Olá, {{ user.name }} </strong>
+    <p> Inicie um agendamento escolhendo um dos profissionais abaixo </p>
+
+    <ul class="providers">
+      {% for provider in providers %}
+        <li>
+          <!-- por enquanto não temos como acessar o avatar do provedor -->
+          <img src="" />
+          <strong> {{ provider.name }}
+          <a href=""> + </a>
+        </li>
+      {% endfor %}
+      <a href="/app/logout" class="logout"> Sair </a>
+    </ul>
+  </div>
 {% endblock %}
 ```
