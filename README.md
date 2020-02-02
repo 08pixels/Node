@@ -854,3 +854,228 @@ class SessionController {
 module.exports = new SessionController()
 
 ```
+
+### Flash Message
+
+#### Dependência
+```
+yarn add connect-flash
+```
+
+É necessário deixar ele acessível a toda aplicação, sendo assim, configuramos o arquivo `server.js`
+
+```js
+
+const express = require('express')
+const nunjucks = require('nunjucks')
+const session = require('express-session')
+const FileStore = require('session-file-store')(session)
+const path = require('path')
+const flash = require('flash')
+
+class Server {
+  constructor() {
+    this.express = express()
+    this.isDev = process.env.NODE_ENV !== 'production'
+
+    this.middlewares()
+    this.views()
+    this.routes()
+  }
+
+  middlewares() {
+    this.express.use(express.urlenconded({extended: true}))
+    // aqui
+    this.express.use(flash())
+
+    this.express.use(session({
+      name: 'root',
+      secret: 'mySecretApp',
+      resave: true,
+      store: new FileStore({
+        path: path.resolve(__dirname, '..', 'tmp', 'sessions')
+      }),
+      saveUninitialized: true,
+    }))
+  }
+
+  views() {
+    nunjucks.configure(path.resolve(__dirname, 'app', 'views'), {
+      autoscape: true,
+      express: this.express,
+      watch: this.isDev
+    })
+
+    this.express.use(express.static(path.resolve(__dirname, 'public')))
+    this.express.set('view engine', 'njk')
+  }
+
+  routes() {
+    this.express.use(require('./server'))
+  }
+}
+
+module.exports = new Server().express
+```
+
+Usando `flash message`
+
+```js
+
+const { User } = require('../models')
+
+class SessionController {
+
+  create(req, res) {
+    return res.render('auth/signin')
+  }
+
+  async store() {
+    const { email, password } = req.body
+
+    const user = await User.findOne({ where: { email }})
+
+    if(!user) {
+      // flash message
+      // parâmetro 1: error ou sucess
+      // parâmetro 2: mensagem
+      req.flash('error', 'Usuário não cadastrado')
+
+      return res.redirect('/')
+    }
+
+    if(!await user.checkPassword(password)) {
+      // flash message
+      req.flash('error', 'Senha Incorreta')
+
+      return res.redirect('/')
+    }
+
+    req.session.user = user
+    return res.redirect('/app/dashboard')
+  }
+}
+
+module.exports = new SessionController()
+```
+
+Usando variável global para que todas as views do nunjucks tenham acesso às flash messages. Para isso vamos criar um novo middleware em `routes.js`
+
+```js
+const express = require('express')
+const multerConfig = require('./config/multer')
+const upload = require('multer')(multerConfig)
+
+const routes = express.Router()
+
+const authMiddleware = require('./app/middlewares/auth')
+const guestMiddleware =require('./app/middlewares/guest')
+
+const UserController = require('./app/controller/UserController')
+const SessionController = require('./app/controllers/SessionController')
+
+// middleware para atribuição de variáveis globais
+// entre as views
+routes.use((req, res, next) => {
+  res.locals.flashSuccess = req.flash('success')
+  res.locals.flashError = req.flash('error')
+
+  return next()
+})
+
+routes.get('/', guestMiddleware, SessionController.create)
+routes.post('/sigin', SessionController.store)
+
+routes.get('signup', guestMiddleware, UserControoler.create)
+routes.post('signup', UserController.store)
+
+routes.use('/app', authMiddleware)
+
+routes.get('/app/dashboard', (req, res) => {
+  return res.render('dashboard')
+})
+
+module.exports = routes
+```
+
+
+Posicionando `flash messages` nas views. Para isso vamos criar uma arquivo `njk`em `_partials`, chamado `flash.njk`
+
+```html
+// flashSuccess e flashError são as variáveis globais
+// que foram criadas
+
+{% for message in flashSuccess %}
+  <div class="alert alert-sucess">
+    {{ message }}
+  </div>
+{% endfor %}
+
+
+{% for message in flashError %}
+  <div class="alert alert-danger">
+    {{ message }}
+  </div>
+{% endfor %}
+```
+
+Informando onde as `flash messages` irão aparecer na view
+
+```html
+// signin.njk
+
+{% extends "_layouts/auth.njk" %}
+
+{% block body %}
+  <form action="/sigin" method="post">
+    <img src="/images/logo.svg" height="42" />
+
+    {% include "_partials/flash.njk" %}
+    <input type="email" name="email" placeholder="Seu e-mail" />
+    <input type="password" name="password" placeholder="Sua senha" />
+
+    <button type="submit"> Enviar </button>
+    <a href="/signup"> Criar Conta </a>
+  </form>
+{% endblock %}
+```
+
+```html
+// signup
+{% include "_layouts/auth.njk" %}
+
+{% block body %}
+  <form action="/signup" method="post" enctype="multipart-data">
+
+    {% include "_partials/flash.njk" %}
+    <label for="avatar">
+      <img src="/images/logo.svg" height="24" />
+    </label>
+
+    <input type="file" id="avatar" name="avatar" />
+    
+    <input type="text" name="name" placeholder="Seu nome" />
+    <input type="email" name="avatar" placeholder="Seu e-mail" />
+    <input type="password" name="password" placeholder="Sua senh a" />
+
+    <label for="provider">
+      <input type="checkbox" id="provider" name="provider" value="1">
+      Sou Cabelereiro
+    </label>
+
+    <button type="submit"> Criar Conta </button>
+    <a href="/"> Já possuo conta </a>
+  </form>
+
+  <script type="text/javascript">
+    var avatarInput = document.getElementById('avatar')
+    var avatarImg = document.querySelector('label[for="avatar"] img)
+
+    avatarInput.onchange = function(e) {
+      avatarImg.classList.add('preview')
+      avatarImg.src = URL.createObjectURL(e.target.files[0])
+    }
+
+  </script>
+{% endblock %}
+```
