@@ -1154,12 +1154,109 @@ Criando a view `dashboard.njk`
         <li>
           <!-- por enquanto não temos como acessar o avatar do provedor -->
           <img src="" />
-          <strong> {{ provider.name }}
+          <strong> {{ provider.name }} </strong>
           <a href=""> + </a>
         </li>
       {% endfor %}
-      <a href="/app/logout" class="logout"> Sair </a>
     </ul>
+
+    <a href="/app/logout" class="logout"> Sair </a>
   </div>
 {% endblock %}
 ```
+
+### Mostrando avatar dos provedores de serviço
+
+#### Criar controller para enviar o avatar
+
+```js
+const path = require('path')
+
+class FileController {
+  show(req, res) {
+    const { file } = req.params
+
+    const filePath = path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'tmp',
+      'uploads',
+      file
+    )
+
+    return res.senFile(filePath)
+  }
+}
+
+module.exports = new FileController()
+
+```
+
+#### Criar rota para tratar o acesso
+
+```js
+
+const express = require('express')
+const multerConfig = require('./config/multer')
+const upload = require('multer')
+const routes = express.Router()
+
+const authMiddleware = require('./app/middlewares/auth')
+const guestMiddleware = require('./app/middlewares/guest')
+
+const UserController = require('./app/controllers/UserController')
+const SessionController = require('./app/controllers/SessionController')
+const DashboardController = require('./app/controllers/DashboardController')
+const FileController = require('./app/controller/FileController')
+
+routes.use((req, res, next) => {
+  res.locals.flashSuccess = req.flash('success')
+  res.locals.flashError = req.flash('error')
+
+  return next()
+})
+
+routes.get('/', guestMiddleware, SessionController.create)
+// aqui
+routes.get('/files/:file', FileController.show)
+routes.post('/sigin', SessionController.store)
+
+routes.get('/signup', guestMiddlware, UserController.create)
+routes.post('/signup', upload.single('avatar'), UserController.store)
+
+routes.use('/app', authMiddleware)
+routes.get('/app/dashboard', DashboardController.index)
+routes.get('/app/logout', SessionController.destroy)
+
+module.exports = routes
+```
+
+#### atualizar a imagem na view `dashboard.njk`
+
+```html
+{% extends "_layouts/main.njk" %}
+
+{% block body%}
+  <div class="content">
+    <strong> Olá, {{ user.name }} </strong>
+    <p> Inicie um agendamento escolhendo um profissional abaixo </p>
+
+    <ul class="providers">
+      {% for provider in providers %}
+        <li class="provider">
+          <div>
+            <img src="/files/{{ provider.avatar }}" />
+            <strong> {{ provider.name }} </strong>
+          </div>
+          <a href=""> + </a>
+        </li>
+      {% endfor %}
+    </ul>
+
+    <a href="/app/logout"> Sair </a>
+  </div>
+{% endblock %}
+```
+
