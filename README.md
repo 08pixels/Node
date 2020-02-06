@@ -1260,3 +1260,82 @@ module.exports = routes
 {% endblock %}
 ```
 
+### Model e Migration de Agendamento
+
+#### Model
+
+```js
+// Appointment.js
+
+module.exports = (sequelize, DataTypes) => {
+  const Appointment = sequelize.define('Appointment', {
+    data: DataTypes.DATE
+  })
+
+  Appointment.associate = models => {
+    Appointment.belongsTo(models.User, { foreingKey: 'user_id' })
+    Appointment.belongsTo(models.User, { foreingKey: 'provider_id'})
+  }
+
+  return Appointment
+}
+```
+
+Com o model `Appointment` criado, iremos criar o migration
+
+```
+npx sequelize migration:create name=create-appointments
+```
+
+Vamos Configurar o arquivo de migration
+
+```js
+'use strict'
+
+module.exports = {
+  up: (queryInterface, Sequelize) => {
+    return queryInterface.createTable('appointments', {
+      id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        autoIncrement: true,
+        primaryKey: true
+      },
+      date: {
+        type: Sequelize.DATE,
+        allowNull: false,
+      },
+      user_id: {
+        type: Sequelize.INTEGER,
+        references: {model: 'users', key: 'id'},
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+        allowNull: false
+      },
+      provider_id: {
+        type: Sequelize.INTEGER,
+        references: {model: 'users', key: 'id'},
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+        allowNull: false
+      },
+      created_at: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
+      updated_at: {
+        type: Sequelize.DATE,
+        allowNull: false
+      }
+    })
+  },
+  down: (queryInterface, Sequelize) => {
+    return queryInterface.dropTable('appointments')
+  }
+}
+```
+
+Com a migration devidamente configurada, vamos rodar a migrate
+
+```
+npx sequelize db:migrate
