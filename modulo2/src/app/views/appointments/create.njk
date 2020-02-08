@@ -10,6 +10,7 @@
         <strong> {{ provider.name }} </strong>
       </div>
     </div>
+
     <form action="/app/appointments/new/{{ provider.id }}" method="post">
       <input type="text" class="flatpickr" placeholder="Escolha um horário"/>
       <div id="hours">

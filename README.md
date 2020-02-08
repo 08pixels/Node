@@ -1339,3 +1339,130 @@ Com a migration devidamente configurada, vamos rodar a migrate
 
 ```
 npx sequelize db:migrate
+```
+
+### Configurando Appointments
+
+Para mostrar o calendário, usaremos o flatpickr, que está acessível através do CDN
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+```
+
+Adicionar o CDN ao header
+```
+// _partials/head.njk
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title> GoBarber </title>
+
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</head>
+```
+
+Criando a view para o Appointment
+
+```html
+// views/appointments/create.njk
+
+{% extends "_layouts/main.njk"%}
+
+{% block body %}
+  <div class="content">
+    <strong> Agendando horário </strong>
+
+    <div class="provider">
+      <img src="/files/{{ provider.avatar}}" />
+      <strong> {{ provider.name }} </strong>
+    </div>
+  </div>
+    <form action="/app/appointments/new/{{ provider.id }}" method="post">
+      <input type="text" class="flatpickr" placeholder="Escolha um horário">
+
+      <div id="hours">
+        <label>
+          <input type="radio" />
+          12:00
+        </label>
+        <label>
+          <input type="radio" />
+          13:00
+        </label>
+        <label>
+          <input type="radio" />
+          14:00
+        </label>
+      </div>
+      <button type="submit"> Agendar </button>
+    </form>
+  </div>
+  <script type="text/javascript">
+    flatpickr('.flatpickr', {
+      minDate: new Date,
+      dateFormat: 'd/m/Y'
+    })
+  </script>
+{% endblock %}
+```
+
+Criando o controller para gerenciar a rota e view
+
+```js
+const { User } = require('../models')
+
+class AppointmentController {
+  async create(req, res) {
+    const provider = await User.findByPk(req.params.provider)
+
+    return res.render('appointments/create', { provider })
+  }
+}
+
+module.exports = new AppointmentController()
+```
+
+Tratando a rota
+
+```js
+const express = require('express')
+const routes = express.Router()
+
+const multerConfig = require('./config/multer')
+const upload = require('multer')(multerConfig)
+
+const authMiddleware = require('./app/middlewares/auth')
+const guestMiddleware = require('./app/middlewares/guest')
+
+const DashboardController = require('./app/controllers/DashboardController')s
+const UserController = require('./app/controllers/UserController')
+const SessionController = require('./app/controllers/SessionController')
+const AppointmentController = require('./app/controllers/AppointmentController')
+const FileController = require('./app/controllers/FileController')
+
+routes.use('/', (req, res, next) => {
+  res.locals.flashSuccess = req.flash('success')
+  res.locals.flashError = req.flash('erroe')
+
+  return next()
+})
+
+routes.get('/', guestMiddleware, SessionController.create)
+routes.post('/signin', SessionController.store)
+
+routes.get('/files/:file', FileController.show)
+
+routes.get('/signup', guestMiddleware, UserController.create)
+routes.post('/signup', upload.single('avatar', UserController.store)
+
+routes.use('/app', authMiddleware)
+routes.get('/app/dashboard', DashboardController.index)
+routes.get('/app/logout', SessionController.destroy)
+
+routes.get('/app/appointments/create/:provider', AppointmentController.create)
+
+module.exports = routes
+```
