@@ -1466,3 +1466,179 @@ routes.get('/app/appointments/create/:provider', AppointmentController.create)
 
 module.exports = routes
 ```
+
+
+### Agendando horários
+
+#### Dependências
+```
+// para o gerenciamento de datas 
+yarn add moment
+```
+
+Inicialmente vamos conficar o `flatpickr` na view de `appointments`  para uma efetuar requisição feita pelo browser.
+
+```html
+// appointments/create.njk
+
+{% include "_layouts/main.njk %}
+
+{% block body %}
+  <div class="content">
+    <strong> Agendando horário </strong>
+
+    <div class="provider">
+      <div>
+        <img src="/files/{{ provider.avatar }}" />
+        <strong> {{ provider.name }} </strong>
+      </div>
+    </div>
+
+    <form action="/app/appointments/new/{{ provider.id }}" method="post">
+      <input type="text" class="flatpickr" placeholder="Escolha um horário" />
+
+      <div id="hours"> </div>
+      <button type="submit"> Agendar </button>
+    </form>
+  </div>
+
+  <script type="text/javascript">
+    flatpickr('.flatpickr', {
+      minDate: new Date(),
+      format: 'd/m/Y',
+      onChange: function(date) {
+        fetch(`/app/available/{{ provider.id }}/?date=${date[0].getTime()}`).then(function(response) {
+          response.text().then(function(html) {
+            document.getElementById('hours').innerHTML = html
+          })
+        })
+      }
+    })
+  </script>
+{% endblock %}
+```
+
+#### Criando o controller para gerenciar os horários disponíveis que serão acessados pela rota `/app/available/:provider`
+
+```js
+// src/app/controllers/AvailableController
+
+const moment = require('moment')
+const { Op } = require('sequelize')
+const { Appointment } = require('../models')
+
+class AvailableController {
+  async index(req, res) {
+    // a rota irá enviar tanto o provider.id (req params)
+    // como a data escolhida pelo usuário (query params)
+
+    const date = moment(parseInt(req.query.date))
+
+    const appointments = await Appointments.findAll({
+      where: {
+        provider_id: req.params.provider,
+        date: {
+          // recupera todos os agendamentos do provider no banco de dados
+          // desde o inicio do dia, até o final
+          [Op.between]: [
+            date.startOf('day').format(),
+            date.endOf('day').format()
+          ]
+        }
+      }
+    })
+
+    const schedule = [
+      '08:00',
+      '09:00',
+      '10:00',
+      '11:00',
+      '12:00',
+      '13:00',
+      '14:00',
+      '15:00',
+      '16:00',
+      '17:00',
+      '18:00',
+    ]
+
+    const available = schedules.map(time => {
+      const [hour, minute] = time.split(':')
+      const value = date.hour(hour).minute(minute).second(0)
+
+      return {
+        time,
+        value: value.format(),
+        available: value.isAfter(moment()) &&
+          !appointments.find(a => moment(a.date).format('HH:mm') === time)
+      }
+    })
+
+    // ainda iremos criar a view
+    return res.render('available/index', { available })
+  }
+}
+
+module.exports = new AvailableController()
+```
+
+#### Criando a view
+
+Nesse caso não iremos usar nenhum _layouts ou _partials, pois será o resultado de uma requisição ajax, feita na view de `appointments`
+
+```html
+// Observemos que o AvailableController passa a variável availables para a view
+
+{% for hour in availables %}
+  <label class="{% if hour.available === false %} disabled {% endif %}" for="time-{{hour.date}}">
+    {% if hour.available === true %}
+      <input type="radio" name="date" value="{{ hour.value }}"id="time-{{ hour.date }}" />
+      {{ hour.time }}
+    {% endif %}
+  </label>
+{% endfor %}
+```
+
+#### Associando a rota com o controller 
+
+```js
+// src/routes.js
+const express = require('express')
+const multerConfig = require('./config/multer')
+const upload = require('multer')(multerConfig)
+const routes = express.Router()
+
+const authMiddleware = require('./app/middlewares/auth')
+const guestMiddleware = require('./app/middlewares/guest')
+
+const DashboardController = require('./app/controllers/DashboardController')
+const SessionController = require('./app/controllers/SessionControllers')
+const UserContoller = require('./app/controllers/UserController')
+const FileController = require('./app/controllers/FileController')
+const AppointmentController = require('./app/controllers/AppointmentController')
+const AvailableController = require('./app/controllers/AvailableController')
+
+routes.use('/', (req, res, next) => {
+  res.locals.flashSuccess = flash('success')
+  res.locals.flashError = flash('error')
+
+  return next()
+})
+
+routes.get('/files/:file', FileController.show)
+
+routes.get('/', guestMiddleware, SessionController.create)
+routes.post('/sigin', SessionController.store)
+
+routes.get('/sigup', guestMiddleware, UserController.create)
+routes.post('/signup', upload.single('avatar'), UserController.store)
+
+routes.use('/app', authMiddleware)
+
+routes.get('/app/logout', SessionController.destroy)
+routes.get('/app/dashboard', DashboardController.index)
+routes.get('/app/appointments/new/:provider', AppointmentController.create)
+routes.get('/app/available/:provider', AvailableController.index)
+
+module.exports = routes
+```
