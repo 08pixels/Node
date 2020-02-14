@@ -1642,3 +1642,84 @@ routes.get('/app/available/:provider', AvailableController.index)
 
 module.exports = routes
 ```
+
+### Armazenando Agendamento
+
+Vamos inicialmente criar a rota com o método post
+
+```js
+const express = require('express')
+const routes = express.Router()
+
+const multerConfig = require('./config/multer')
+const upload = require('multer')(multerConfig)
+
+const authMiddleware = require('./app/middlewares/auth')
+const guestMiddleware = require('./app/middlewares/guest')
+
+const SessionController = require('./app/controllres/SessionController')
+const UserController = require('./app/controllers/UserController')
+const FileController = require('./app/controllers/FileController')
+const DashboardController = require('./app/controllers/DashboardController')
+const AvailableController = require('./app/controller/AvailableController')
+const AppointmentController = require('./app/controllers/AppointmentController')
+
+routes.use('/', (req, res, next) => {
+  res.locals.flashSuccess = req.flash('success')
+  res.locals.flashError = req.flash('Error')
+
+  return next()
+})
+
+routes.get('/app/files/:file', FileController.show)
+
+routes.get('/', guestMiddleware, SessionController.create)
+routes.post('/sigin', SessionController.store)
+
+routes.get('/signup', guestMiddleware, UserController.create)
+routes.post('/signup', upload.single('avatar'), UserController.store)
+
+routes.use('/app', authMiddleware)
+
+
+routes.get('/app/logout', SessionController.destroy)
+routes.get('/app/dashboard', DashboardController.index)
+routes.get('/app/appointment/new/:provider', AppointmentController.create)
+// aqui
+routes.post('/app/appointment/new/:provider', AppointmentController.store)
+routes.get('/app/available/:provider', AvailableController.index)
+
+module.exports = routes
+```
+
+#### Vamos criar o método no respectivo controller
+
+```js
+
+const { Appointment } = require('../models')
+
+class AppointmentController {
+  async create(req, res) {
+    const provider = await User.findByPk(req.params.provider)
+
+    return res.render('/appointment/create', { provider })
+  }
+
+  async store(req, res) {
+    const { id } = req.session
+    const { provider } = req.params
+    const { date } = req.body
+    
+    await Appointment.create({
+      user_id: id,
+      provider_id: provider
+      date
+    })
+
+    return res.redirect('/app/dashboard')
+  }
+}
+
+module.exports = new AppointmentController()
+```
+
